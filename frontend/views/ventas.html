@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Facturas | Historial</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: { card: '0 10px 40px -14px rgba(0,0,0,.25)'},
+          colors: { brand: { 900: '#7f1d1d' } }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[#e6c4b8] text-slate-900">
+  <header class="bg-white border-b">
+    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-4">
+      <a href="/tienda.html" class="rounded-lg bg-brand-900 text-white px-3 py-1.5 text-sm hover:opacity-90">← Volver</a>
+      <h1 class="text-lg font-semibold">Historial de facturas</h1>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-6">
+    <!-- Controles -->
+    <section class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="grow">
+        <label class="block text-xs text-slate-600">Buscar (cliente, folio, fecha)</label>
+        <input id="q" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-900" placeholder="Ej: Ana, FAC-2025, 2025-09-03">
+      </div>
+      <button id="btnReload" class="rounded-xl bg-brand-900 text-white px-4 py-2 hover:opacity-90">Recargar</button>
+    </section>
+
+    <!-- Tabla -->
+    <section class="rounded-2xl bg-white border border-slate-200 shadow-card overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100 text-slate-600">
+          <tr>
+            <th class="px-3 py-2 text-left">Folio / ID</th>
+            <th class="px-3 py-2 text-left">Cliente</th>
+            <th class="px-3 py-2 text-left">Fecha</th>
+            <th class="px-3 py-2 text-right">Total</th>
+            <th class="px-3 py-2 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-slate-100">
+          <!-- filas dinámicas -->
+        </tbody>
+      </table>
+      <div id="empty" class="hidden p-6 text-center text-slate-600">Sin facturas todavía.</div>
+    </section>
+  </main>
+
+  <!-- Modal detalle -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-card">
+      <header class="flex items-center justify-between border-b px-4 py-3">
+        <h3 id="mTitle" class="text-base font-semibold">Factura</h3>
+        <button id="mClose" class="text-slate-500 hover:text-slate-800">✕</button>
+      </header>
+      <div class="p-4 space-y-3 text-sm">
+        <div class="grid sm:grid-cols-3 gap-3">
+          <p><span class="font-medium">Cliente:</span> <span id="mCliente">—</span></p>
+          <p><span class="font-medium">Fecha:</span> <span id="mFecha">—</span></p>
+          <p><span class="font-medium">Medio de pago:</span> <span id="mMedio">—</span></p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-100 text-slate-600">
+              <tr>
+                <th class="px-3 py-2 text-left">Producto</th>
+                <th class="px-3 py-2 text-right">Precio</th>
+                <th class="px-3 py-2 text-right">Cant.</th>
+                <th class="px-3 py-2 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="mItems" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <div class="flex justify-end gap-12 text-sm">
+          <div><span class="text-slate-500">Subtotal</span> <span id="mSubtotal" class="font-medium">$0</span></div>
+          <div class="text-lg"><span class="font-semibold">TOTAL</span> <span id="mTotal" class="font-bold">$0</span></div>
+        </div>
+      </div>
+      <footer class="flex items-center justify-end gap-3 border-t px-4 py-3">
+        <button id="mPrint" class="rounded-xl border border-slate-300 px-3 py-1.5 hover:bg-slate-50">🖨️ Imprimir</button>
+        <a id="mPdf" target="_blank" class="rounded-xl bg-brand-900 text-white px-3 py-1.5 hover:opacity-90">📄 Abrir PDF</a>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const API_FACT = "http://localhost:8002"; // ⇦ cámbialo si usas 5000
+    const token = localStorage.getItem("token") || ""; // opcional
+
+    // Utils
+    const $ = (s) => document.querySelector(s);
+    const money = (v) => (Number(v)||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+    const fmtDate = (d) => {
+      try {
+        return new Date(d).toLocaleDateString('es-CO',{year:'numeric',month:'2-digit',day:'2-digit'});
+      } catch { return d || '—'; }
+    };
+    const pick = (obj, keys) => keys.find(k => obj?.[k] != null) && obj[keys.find(k => obj?.[k] != null)];
+
+    let facturas = []; // cache
+
+    async function fetchJSON(url, opts={}) {
+      const headers = Object.assign({ "Content-Type":"application/json" }, opts.headers || {});
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(url, Object.assign({}, opts, { headers }));
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    }
+
+    async function cargarFacturas() {
+      const tbody = $('#tbody');
+      const empty = $('#empty');
+      tbody.innerHTML = `
+        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">Cargando...</td></tr>
+      `;
+      empty.classList.add('hidden');
+
+      try {
+        const data = await fetchJSON(`${API_FACT}/billing/facturas`);
+        facturas = Array.isArray(data) ? data : (data.items || []);
+        renderTabla(facturas);
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-red-600">No se pudieron cargar las facturas.</td></tr>`;
+      }
+
+      if (!facturas.length) empty.classList.remove('hidden');
+    }
+
+    function renderTabla(rows) {
+      const tbody = $('#tbody');
+      tbody.innerHTML = rows.map(f => {
+        const id     = f.id || f._id || f.folio || f.numero || '—';
+        const cliente= (f.cliente && (f.cliente.nombre || f.cliente.name)) || f.cliente || f.customerName || '—';
+        const fecha  = f.fecha || f.createdAt || f.date;
+        const items  = f.items || f.detalle || [];
+        const total  = f.total != null ? f.total :
+                       items.reduce((a,it)=>a + (Number(it.precio||it.price||0) * (Number(it.cantidad||it.qty||it.quantity||1))),0);
+        return `
+          <tr>
+            <td class="px-3 py-2">${id}</td>
+            <td class="px-3 py-2">${escapeHtml(cliente)}</td>
+            <td class="px-3 py-2">${fmtDate(fecha)}</td>
+            <td class="px-3 py-2 text-right font-medium">${money(total)}</td>
+            <td class="px-3 py-2 text-right">
+              <button class="text-brand-900 hover:underline" data-ver="${id}">Ver</button>
+              <button class="ml-3 text-slate-600 hover:underline" data-print="${id}">Imprimir</button>
+              <button class="ml-3 text-slate-600 hover:underline" data-pdf="${id}">PDF</button>
+            </td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">Sin facturas.</td></tr>`;
+    }
+
+    // Búsqueda local
+    $('#q').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const filtradas = facturas.filter(f => {
+        const id = (f.id || f._id || f.folio || f.numero || '').toString().toLowerCase();
+        const cliente = ((f.cliente && (f.cliente.nombre || f.cliente.name)) || f.cliente || f.customerName || '').toString().toLowerCase();
+        const fecha = (f.fecha || f.createdAt || f.date || '').toString().toLowerCase();
+        return id.includes(q) || cliente.includes(q) || fecha.includes(q);
+      });
+      renderTabla(filtradas);
+    });
+
+    // Acciones tabla (delegación)
+    document.addEventListener('click', async (e) => {
+      const idVer = e.target.getAttribute('data-ver');
+      const idPrint = e.target.getAttribute('data-print');
+      const idPdf = e.target.getAttribute('data-pdf');
+
+      if (idVer) {
+        e.preventDefault();
+        await abrirDetalle(idVer);
+      }
+      if (idPrint) {
+        e.preventDefault();
+        await imprimirFactura(idPrint);
+      }
+      if (idPdf) {
+        e.preventDefault();
+        abrirPDF(idPdf);
+      }
+    });
+
+    // Recargar
+    $('#btnReload').addEventListener('click', cargarFacturas);
+
+    // Modal
+    $('#mClose').addEventListener('click', () => $('#modal').classList.add('hidden'));
+    $('#modal').addEventListener('click', (e) => {
+      if (e.target === $('#modal')) $('#modal').classList.add('hidden');
+    });
+
+    async function abrirDetalle(id) {
+      try {
+        const f = await fetchJSON(`${API_FACT}/billing/facturas/${encodeURIComponent(id)}`);
+        const folio   = f.folio || f.id || f._id || f.numero || '—';
+        const cliente = (f.cliente && (f.cliente.nombre || f.cliente.name)) || f.cliente || f.customerName || '—';
+        const fecha   = f.fecha || f.createdAt || f.date || '—';
+        const medio   = f.medioPago || f.pago || f.paymentMethod || '—';
+        const items   = f.items || f.detalle || [];
+
+        $('#mTitle').textContent   = `Factura ${folio}`;
+        $('#mCliente').textContent = cliente;
+        $('#mFecha').textContent   = fmtDate(fecha);
+        $('#mMedio').textContent   = medio;
+
+        const rows = items.map(it => {
+          const nombre = it.nombre || it.name || it.product?.nombre || it.product?.name || '—';
+          const precio = Number(it.precio || it.price || 0);
+          const cant   = Number(it.cantidad || it.qty || it.quantity || 1);
+          return `
+            <tr>
+              <td class="px-3 py-2">${escapeHtml(nombre)}</td>
+              <td class="px-3 py-2 text-right">${money(precio)}</td>
+              <td class="px-3 py-2 text-right">${cant}</td>
+              <td class="px-3 py-2 text-right">${money(precio * cant)}</td>
+            </tr>
+          `;
+        }).join('');
+        $('#mItems').innerHTML = rows || `<tr><td colspan="4" class="px-3 py-4 text-center text-slate-500">Sin items.</td></tr>`;
+
+        const total = f.total != null ? f.total :
+          items.reduce((a,it)=>a + (Number(it.precio||it.price||0) * (Number(it.cantidad||it.qty||it.quantity||1))),0);
+        $('#mSubtotal').textContent = money(total);
+        $('#mTotal').textContent    = money(total);
+
+        // acciones modal
+        $('#mPrint').onclick = () => imprimirFactura(folio);
+        $('#mPdf').href = `${API_FACT}/print/facturas/${encodeURIComponent(folio)}`;
+
+        $('#modal').classList.remove('hidden');
+      } catch (e) {
+        console.error(e);
+        alert('No se pudo cargar el detalle.');
+      }
+    }
+
+    async function imprimirFactura(id) {
+      try {
+        await fetchJSON(`${API_FACT}/billing/facturas/${encodeURIComponent(id)}/imprimir`, { method: 'POST' });
+        alert('Factura enviada a imprimir.');
+      } catch (e) {
+        console.error(e);
+        alert('No se pudo imprimir.');
+      }
+    }
+
+    function abrirPDF(id) {
+      const url = `${API_FACT}/print/facturas/${encodeURIComponent(id)}`;
+      window.open(url, '_blank');
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, s => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[s]));
+    }
+
+    document.addEventListener('DOMContentLoaded', cargarFacturas);
+  </script>
+</body>
+</html>

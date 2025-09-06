@@ -1,0 +1,23 @@
+sudo docker compose run --rm auth-service python init_admin.py
+
+
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"juan","password":"1234"}'
+
+
+curl -X POST http://localhost:8000/auth/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <tu_token>" \
+  -d '{"username":"ana","password":"xxxx","role":"user"}'
+
+
+curl -X GET http://localhost:8000/auth/me \
+  -H "Authorization: Bearer <tu_token>"
+
+
+En tu máquina, entra al contenedor de Mongo:
+docker exec -it mongo_auth mongosh -u root -p example
+show dbs
+use admin
+db.users.find()

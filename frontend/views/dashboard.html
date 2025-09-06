@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tienda | Panel inicial</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind config opcional (sombra para cards)
+    tailwind.config = {
+      theme: {
+        extend: { boxShadow: { card: '0 6px 30px -12px rgba(0,0,0,0.25)'} }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[#e6c4b8] text-gray-900">
+  <!-- Barra superior (sin login) -->
+  <header class="border-b bg-white">
+    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-red-900/90 text-white grid place-items-center font-bold">TI</div>
+        <h1 class="text-lg font-semibold">Tienda · Panel principal</h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido -->
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <div id="welcome" class="hidden mb-6 rounded-xl border border-pink-800 bg-pink-50 px-4 py-3 text-emerald-900"></div>
+    <section>
+      <h2 class="mb-4 text-xl font-semibold">Accesos rápidos</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <a href="/generar-factura" class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-card hover:shadow-lg transition" aria-label="Ir a generar factura">
+          <div class="flex items-start gap-4">
+            <div class="rounded-xl bg-red-900/90 text-white p-3">
+              <!-- Icono archivo/PDF -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v6h6M14.25 19.5H6.75A2.25 2.25 0 0 1 4.5 17.25V6.75A2.25 2.25 0 0 1 6.75 4.5h6.19a2.25 2.25 0 0 1 1.59.66l4.41 4.41c.42.42.66 1 .66 1.59v6.09a2.25 2.25 0 0 1-2.25 2.25z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold">Registro y Generacion de factura</h3>
+              <p class="text-sm text-gray-500">Crea y guarda facturas con datos del cliente.</p>
+            </div>
+          </div>
+        </a>
+        <!-- Registro de ventas -->
+        <a href="/facturas" class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-card hover:shadow-lg transition" aria-label="Ir a registro de ventas">
+          <div class="flex items-start gap-4">
+            <div class="rounded-xl bg-red-900/90 text-white p-3">
+              <!-- Icono check/ventas -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l5.25 5.25L20.25 7.5"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold">Registro de ventas</h3>
+              <p class="text-sm text-gray-500">Ingresa ventas diarias y medios de pago.</p>
+            </div>
+          </div>
+        </a>
+
+
+
+        <!-- Otros módulos -->
+        <a href="clientes" class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-card hover:shadow-lg transition" aria-label="Ir a clientes">
+          <div class="flex items-start gap-4">
+            <div class="rounded-xl bg-red-900/90 text-white p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0zM4.5 20.25a7.5 7.5 0 0 1 15 0"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold">Clientes</h3>
+              <p class="text-sm text-gray-500">Gestión de clientes y contactos.</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="/inventario" class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-card hover:shadow-lg transition" aria-label="Ir a inventario">
+          <div class="flex items-start gap-4">
+            <div class="rounded-xl bg-red-900/90 text-white p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 7.5h16.5M6 7.5v9.75A2.25 2.25 0 0 0 8.25 19.5h7.5A2.25 2.25 0 0 0 18 17.25V7.5"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold">Inventario</h3>
+              <p class="text-sm text-gray-500">Productos, existencias y costos.</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="alertas" class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-card hover:shadow-lg transition" aria-label="Ir a reportes">
+          <div class="flex items-start gap-4">
+            <div class="rounded-xl bg-red-900/90 text-white p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7.5 15V9m4.5 6V6m4.5 9v-3"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold">Alertas de Stock</h3>
+            </div>
+          </div>
+        </a>
+
+        <a href="/usuarios" class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-card hover:shadow-lg transition" aria-label="Ir a clientes">
+          <div class="flex items-start gap-4">
+            <div class="rounded-xl bg-red-900/90 text-white p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0zM4.5 20.25a7.5 7.5 0 0 1 15 0"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold">Usuarios</h3>
+              <p class="text-sm text-gray-500">Gestión de usuarios.</p>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+  </main>
+<script type="module">
+  import { checkAuth } from "../public/js/auth-guard.js";
+  checkAuth(true);
+</script>
+<script src="./script2.js"></script>
+</body>
+</html>

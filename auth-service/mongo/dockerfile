@@ -1,0 +1,11 @@
+# Usa la imagen oficial de MongoDB como base
+FROM mongo:6
+
+# Directorio dentro del contenedor (Mongo ya usa /data/db por defecto)
+VOLUME ["/data/db"]
+
+# Exponer el puerto de Mongo
+EXPOSE 27017
+
+# Comando de inicio
+CMD ["mongod"]

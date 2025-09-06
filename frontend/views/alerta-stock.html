@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> Registrar Clientes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: { card: '0 10px 40px -12px rgba(0,0,0,.25)'}
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Oculta controles al imprimir */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: rgba(173, 19, 19, 0.642) !important; }
+      #invoice { box-shadow: none !important; margin: 0 !important; }
+      @page { size: A4; margin: 14mm; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#e6c4b8]  text-slate-900">
+  <div class="mx-auto max-w-5xl p-4 sm:p-6">
+    <!-- Controles (no se imprimen) -->
+    <section class="no-print mb-6 space-y-4">
+      <h1 class="text-2xl font-semibold">Revisar Stock</h1>
+
+      <!-- Línea de producto -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
+        <div class="grid sm:grid-cols-5 gap-3">
+          <label class="block">
+            <span class="text-sm text-slate-600">códico Producto</span>
+            <input id="edad" type="number" min="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-600"/>
+          </label>
+          <label class="block">
+            <span class="px-8text-sm text-slate-600">stock</span>
+            <input id="identificacion" type="number" min="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-600"/>
+          </label>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <button id="btnAgregar" class="px-8 py-2 rounded-xl bg-red-900 text-white hover:opacity-90">Revisar </button>
+          <span id="msg" class="text-sm"></span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+<script>
+  
+const API_ADMIN = 'http://localhost:5000'; // cambia si es necesario
+const LIMITE_STOCK = 5; // límite mínimo para alerta
+
+// Elementos
+const $ = (sel) => document.querySelector(sel);
+const btn = $('#btnAgregar');
+const inputCodigo = $('#edad');
+const inputStock = $('#identificacion');
+const msg = $('#msg');
+
+// Buscar producto con stock bajo
+async function revisarStock() {
+  const codigo = inputCodigo.value.trim();
+  if (!codigo) {
+    msg.textContent = '⚠️ Ingresa un código válido.';
+    msg.className = 'text-sm text-orange-600';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_ADMIN}/notifications/logs`);
+    if (!res.ok) throw new Error("No se pudo obtener logs");
+    const logs = await res.json();
+
+    // Buscar por código exacto (ajusta según tu estructura de logs)
+    const alerta = logs.find(p => p.codigo == codigo);
+
+    if (!alerta) {
+      msg.textContent = 'Sin alertas para este producto.';
+      msg.className = 'text-sm text-green-600';
+      return;
+    }
+
+    inputStock.value = alerta.stock;
+    if (alerta.stock < LIMITE_STOCK) {
+      msg.textContent = `Stock BAJO: Solo quedan ${alerta.stock} unidades.`;
+      msg.className = 'text-sm text-red-600';
+    } else {
+      msg.textContent = `Stock suficiente: ${alerta.stock} unidades.`;
+      msg.className = 'text-sm text-green-600';
+    }
+  } catch (e) {
+    console.error(e);
+    msg.textContent = 'Error al verificar el stock.';
+    msg.className = 'text-sm text-red-600';
+  }
+}
+
+// Evento
+btn.addEventListener('click', revisarStock);
+</script>
+
+</body>
+</html>

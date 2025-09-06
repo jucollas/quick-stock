@@ -1,0 +1,19 @@
+# Imagen base de Node.js
+FROM node:18
+
+# Crear directorio de la app
+WORKDIR /app
+
+# Copiar package.json e instalar dependencias primero (mejor caché)
+COPY package*.json ./
+
+RUN npm install
+
+# Copiar todo el código del frontend
+COPY . .
+
+# Exponer el puerto donde corre tu server.js
+EXPOSE 3000
+
+# Comando de arranque
+CMD ["node", "server.js"]

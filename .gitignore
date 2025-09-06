@@ -1,0 +1,10 @@
+.*/
+
+__pycache__/
+
+data/
+
+.env*
+
+node_modules/
+docker-compose.yml
