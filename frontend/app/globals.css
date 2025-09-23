@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* ===============================
+   Variables de color del proyecto
+   =============================== */
+:root {
+  /* Marca */
+  --brand-1: #FAA091; /* principal */
+  --brand-2: #FADFF2; /* complemento */
+  --brand-contrast: #3b0f06; /* texto sobre tonos de marca (oscuro y legible) */
+
+  /* Base */
+  --bg: #f3f4f6;       /* gris claro ppal (body) */
+  --bg-soft: #f7f8fa;  /* gris aún más claro para degradados */
+  --card: #ffffff;     /* blanco para tarjetas */
+  --border: #e5e7eb;   /* gris de bordes */
+  --fg: #0f172a;       /* texto ppal (slate-900) */
+  --muted: #6b7280;    /* texto secundario */
+
+  /* UI */
+  --ring: var(--brand-1);
+  --link: #d36a59;       /* derivado de brand-1 */
+  --selection-bg: var(--brand-2);
+  --selection-fg: var(--fg);
+}
+
+/* ===============================
+   Estilos base
+   =============================== */
+@layer base {
+  html, body, #__next {
+    height: 100%;
+  }
+
+  body {
+    @apply antialiased;
+    /* Fondo gris claro con toques de marca muy sutiles */
+    background:
+      radial-gradient(1000px 500px at 10% -10%, var(--bg-soft), transparent),
+      radial-gradient(1200px 600px at 100% 0%, color-mix(in srgb, var(--brand-2) 25%, transparent), transparent),
+      var(--bg);
+    color: var(--fg);
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  a {
+    color: var(--link);
+  }
+  a:hover { filter: brightness(0.95); }
+
+  h1, h2, h3, h4 {
+    color: var(--fg);
+  }
+  p { color: var(--muted); }
+}
+
+/* ===============================
+   Component classes (opcionales)
+   =============================== */
+@layer components {
+  .card {
+    @apply rounded-2xl shadow-sm border p-5;
+    background: var(--card);
+    border-color: var(--border);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-shadow;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+  }
+
+  .btn-brand {
+    background: linear-gradient(180deg, var(--brand-2), var(--brand-1));
+    color: var(--brand-contrast);
+  }
+  .btn-brand:hover {
+    filter: contrast(1.05) saturate(1.05);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+
+  .chip-brand {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+    background: var(--brand-2);
+    color: var(--brand-contrast);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ===============================
+   Utilities extra (opcionales)
+   =============================== */
+@layer utilities {
+  .bg-app { background: var(--bg); }
+  .bg-brand-1 { background-color: var(--brand-1); }
+  .bg-brand-2 { background-color: var(--brand-2); }
+  .text-brand { color: var(--brand-contrast); }
+  .border-brand { border-color: var(--brand-1); }
+}

@@ -1,17 +1,28 @@
-# Usa una imagen base de Python
-FROM python:3.9-slim
+# ./print-service/Dockerfile
+FROM python:3.11-slim
 
-# Establece el directorio de trabajo dentro del contenedor
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Copia todos los archivos del proyecto al contenedor
-COPY . /app
+# ReportLab requiere fuentes/freetype para texto correcto en PDF
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-dejavu-core \
+    libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instala las dependencias necesarias
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expone el puerto 5000 para que Flask sea accesible
-EXPOSE 5000
+COPY . .
 
-# Comando para ejecutar la aplicación
-CMD ["python", "app.py"]
+# Directorio para PDFs (también se montará como volumen)
+RUN mkdir -p /files
+ENV FILES_DIR=/files \
+    PRINT_PORT=4004
+
+EXPOSE 4004
+
+# Uvicorn: producción ligera
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4004"]

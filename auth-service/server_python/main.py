@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +24,8 @@ MONGO_URL = os.getenv("MONGO_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
 NAME_DB = os.getenv("NAME_DB")
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))  # NUEVO
+
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[NAME_DB]
@@ -40,7 +43,6 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-
 # --- HELPERS ---
 def serialize_user(user):
     return {
@@ -51,7 +53,8 @@ def serialize_user(user):
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Si el token trae `exp`, PyJWT validará expiración automáticamente
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"require": ["exp", "iat"]})
         user_id = payload.get("id")
         if not user_id:
             raise HTTPException(status_code=401, detail="Token inválido")
@@ -66,6 +69,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
+def create_access_token(*, user_id: str, role: str) -> str:
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "id": user_id,
+        "role": role,
+        "iat": int(now.timestamp()),
+        "exp": int(expire.timestamp()),
+        "iss": "auth-service"  # cambia si quieres
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
 
 # --- ENDPOINTS ---
 @app.post("/auth/login")
@@ -74,11 +89,18 @@ async def login(user: UserLogin):
     if not db_user:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
+    # Asegúrate de que db_user["password"] sea bytes en la colección
     if not bcrypt.checkpw(user.password.encode(), db_user["password"]):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    token = jwt.encode({"id": str(db_user["_id"])}, SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": token, "token_type": "bearer"}
+    token = create_access_token(user_id=str(db_user["_id"]), role=db_user["role"])  # CAMBIO
+
+    # (Opcional pero útil para el frontend: segundos hasta expirar)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    }
 
 
 @app.post("/auth/users", status_code=201)

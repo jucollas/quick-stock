@@ -16,4 +16,5 @@ COPY . .
 EXPOSE 3000
 
 # Comando de arranque
-CMD ["node", "server.js"]
+CMD ["npm", "run", "dev"]
+
